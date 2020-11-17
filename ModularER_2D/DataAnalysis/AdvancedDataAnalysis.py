@@ -1,15 +1,37 @@
+""" Functions used for publication, I don't expect anyone to follow what is going on here """
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
-from matplotlib.patches import Ellipse
 from matplotlib import cm
 import matplotlib.transforms as transforms
 import math
 import os
 import configparser
 import scipy.stats as st
+from matplotlib.patches import Ellipse
 
-def load_datas(paths = None):
+class FitnessData:
+	def __init__(self):
+		self.p_0 = []		# 0th percentile
+		self.p_25 = []		# 25th percentile
+		self.p_50 = []		# 50th percentile
+		self.p_75 = []		# 75th percentile
+		self.p_100 = []		# 100th percentile
+		self.avg = []		# average
+		self.divValues =[]	# diversity values
+	def save(self, saveFile, num = ''):
+		pickle.dump(self,open(saveFile + str(num),"wb"))
+	def addFitnessData(self,fitnesses, gen):
+		self.avg.append(np.average(fitnesses))
+		self.p_0.append(np.percentile(fitnesses,0))
+		self.p_25.append(np.percentile(fitnesses,25))
+		self.p_50.append(np.percentile(fitnesses,50))
+		self.p_75.append(np.percentile(fitnesses,75))
+		self.p_100.append(np.percentile(fitnesses,100))
+
+""" for loading data from multiple paths path. Note that it's quite incromprihensible """
+def load_datas(paths = None, loadFromExperimentSubfolder = False):
 	if paths is None:
 		paths = ['C:/result_temp_final','D:/results/cppn_final/','D:/results/ce_final/' ]
 	for directory in paths:
@@ -32,24 +54,27 @@ def load_datas(paths = None):
 		except:
 			print("Could not find file: " , count, " in path " , directory)
 
-		file_name = directory + 'result_' +str(count)+'/s_'
-		try:
-			f = open(file_name)
-			f.close()
-		except:
-			file_name = directory +str(count)+'/s_'
-		
+		file_name = directory + 's_'
+		if (loadFromExperimentSubfolder is True):
+			try:
+				f = open(file_name)
+				f.close()
+			except:
+				file_name = directory +str(count)+'/s_'
+		else:
+			file_name = directory + 's_'
 		try:
 			with open(file_name) as f:
 				fit_data = pickle.load(open(file_name,"rb"))
 				# add associated configuration file
 				fit_data.config = config
 				fitness_datas.append(fit_data)
+				print("found file ", count)
 			count+=1
-			#print(count)
-			#plotter.plotFitnessProgress(fitness_datas[0])
+				#print(count)
+				#plotter.plotFitnessProgress(fitness_datas[0])
 		except:
-			print("---")
+			print("Could not unpickle the fitness data of experiment ", count)
 			count+=1
 			if (count >30 and count < 60):
 				continue
@@ -63,7 +88,6 @@ def load_datas(paths = None):
 		#if count > 256:
 		#	file_present = False
 	return fitness_datas
-
 
 def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
     """
@@ -349,27 +373,8 @@ class Plotter:
 	def setDivValue(self,individual):
 		return
 
-class FitnessData:
-	def __init__(self):
-		self.p_0 = []
-		self.p_25 = []
-		self.p_50 = []
-		self.p_75 = []
-		self.p_100 = []
-		self.avg = []
-		self.divValues =[]
-	def save(self, saveFile, num = ''):
-		pickle.dump(self,open(saveFile + str(num),"wb"))
-	def addFitnessData(self,fitnesses, gen):
-		self.avg.append(np.average(fitnesses))
-		self.p_0.append(np.percentile(fitnesses,0))
-		self.p_25.append(np.percentile(fitnesses,25))
-		self.p_50.append(np.percentile(fitnesses,50))
-		self.p_75.append(np.percentile(fitnesses,75))
-		self.p_100.append(np.percentile(fitnesses,100))
 
-#def plot_encoding_data(ax, data, title):
-
+""" Used to plot diversity metrics across runs """ 
 def plot_diversity_data(ax, all_data, encoding_type, sort,plotIndividualLines=False, x_limit = 1000, y_limit = 2000):
 	cmap = cm.viridis
 	sorts = []
@@ -654,8 +659,7 @@ def plot_fitness_datas(fitness_datas,sort = None):
 	return
 
 
-
-
+""" For plotting many runs in the same plot """
 def plot_fitness_datas_together(fitness_datas,sort = None,plot_individual_lines=False):
 	cmap = cm.viridis
 	fig, (ax1) = plt.subplots(1,1,sharex=True,sharey=True)
@@ -768,13 +772,16 @@ def plot_fitness_datas_together(fitness_datas,sort = None,plot_individual_lines=
 	return
 
 
-def plot_comparison_fitness():
+def plot_comparison_fitness(path = None):
 	#paths = ['C:/result_temp_final/','D:/results/cppn_final/','D:/results/ce_final/']
-	paths = ['C:/result_temp_final/']
+	paths = []
+	if path is None:
+		paths.append('C:/result_temp_final/')
+	else:
+		paths.append(path)
 	fitness_datas = load_datas(paths)
 	plot_fitness_datas_together(fitness_datas,sort=None,plot_individual_lines=True)
 	plt.show()
-	
 
 def analyze_sort():
 	#directory = 'results/cppn_final/'
@@ -800,7 +807,7 @@ def diversity_plot():
 def diversity_area_plot():
 	displayDivsxy()
 
-
+""" plotting diversity of multiple evolutionary runs in the sweep """
 def plot_sweep_diversity():
 	paths = ['C:/results_sweep/','D:/results/cppn_sweep/','D:/results/ce_sweep/']
 	fitness_datas = load_datas(paths)
@@ -861,6 +868,7 @@ def plot_sweep():
 	#fitness_datas,sort = None, together = False
 
 if __name__ == "__main__":
+	# the following lines of code are quick hacks that were used for last-minute plotting, they might be a bit lacking in user-friendliness
 	#plt.rcParams.update({'font.size': 16})
 	plot_sweep()
 	#plot_sweep_diversity()
@@ -868,4 +876,3 @@ if __name__ == "__main__":
 	#diversity_plot()
 	#analyze_sort()
 	#diversity_area_plot() # todo
-
