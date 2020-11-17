@@ -831,7 +831,7 @@ def plot_sweep_diversity():
 	#fitness_datas,sort = None, together = False
 
 def plot_sweep():
-	paths = ['C:/results_sweep/','D:/results/cppn_sweep/','D:/results/ce_sweep/']
+	paths = ['C:/results_sweep/']#,'D:/results/cppn_sweep/','D:/results/ce_sweep/']
 	fitness_datas = load_datas(paths)
 	fig,([ax1,ax2],[ax3,ax4]) = plt.subplots(2,2,True,True)
 	#fig,(ax1) = plt.subplots(1,1,True,True)

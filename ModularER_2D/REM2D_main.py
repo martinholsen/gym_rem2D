@@ -186,16 +186,23 @@ class run2D():
 		The continue progression file specifies whether it should load an evolutionary run that might
 		have crashed, or that you want to continue with perhaps different parameters. 
 		'''
+		eat = config['ea']['type']
 		if (continue_progression):
 			try:
 				self.fitnessData = pickle.load(open(self.SAVE_FILE_DIRECTORY,"rb"))
 				population = pickle.load(open(self.SAVE_FILE_DIRECTORY + self.POPULATION_FILE,"rb"))
 				self.plotter.plotFitnessProgress(self.fitnessData )
 				print("Found existing population, continueing evolution")
-				self.run_deap(config,population = population)
+				if (eat == 'deap'):
+					self.run_deap(config,population = population)
+				else:
+					print("run map-elites")
 			except:
 				raise("Could not find file to continue")
-		self.run_deap(config)
+		if (eat == 'deap'):
+			self.run_deap(config)
+		else:
+			print("run map-elites")
 
 
 	def initialize_parameters_from_config_file(self,dir, config):
@@ -395,9 +402,9 @@ def evaluate(individual, EVALUATION_STEPS= 10000, HEADLESS=True, INTERVAL=100, E
 
 def setup():
 	parser = argparse.ArgumentParser(description='Process arguments for configurations.')
-	parser.add_argument('--file',type = str, help='config file', default="0.cfg")
+	parser.add_argument('--file',type = str, help='config file', default="1.cfg")
 	parser.add_argument('--seed',type = int, help='seed', default=0)
-	parser.add_argument('--headless',type = int, help='headless mode', default=0)
+	parser.add_argument('--headless',type = int, help='headless mode', default=1)
 	parser.add_argument('--n_processes',type = int, help='number of processes to use', default=1)
 	parser.add_argument('--output',type = str, help='output directory', default='')
 	parser.add_argument('--wallclock-time-limit', type=int, help='wall-clock limit in seconds', default=sys.maxsize)

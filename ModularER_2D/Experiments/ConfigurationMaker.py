@@ -5,9 +5,10 @@ import os
 mutation_rates = [0.01]
 morphology_mutation_rates = [0.01]
 mutation_sigmas = [0.1]
-encodings = ['lsystem']
+encodings = ['direct','lsystem']
+n_duplicates = 1
 
-def save_config(experiment_nr,mr,mmr,ms,enc,dir):
+def save_config(experiment_nr,mr,mmr,ms,enc,dir,eat='deap'):
 	config = configparser.ConfigParser()
 	config['experiment'] = {}
 	config['experiment']['checkpoint_frequency'] = '10'
@@ -35,6 +36,8 @@ def save_config(experiment_nr,mr,mmr,ms,enc,dir):
 	# placeholder, not implemented in this version
 	#config['ea']['crossover_prob']
 	config['ea']['interval'] = '5'
+	# choose which type of ea to use
+	config['ea']['type'] = eat
 
 
 	config['morphology'] = {}
@@ -58,8 +61,6 @@ def save_config(experiment_nr,mr,mmr,ms,enc,dir):
 	config['visualization']['v_tree'] = '0'
 	config['visualization']['v_progression'] = '0'
 	config['visualization']['v_debug'] = '0'
-	
-
 	with open(dir+str(experiment_nr)+'.cfg', 'w') as configfile:
 		config.write(configfile)
 
@@ -68,7 +69,6 @@ if __name__ == "__main__":
 	if not os.path.exists(directory):
 	    os.makedirs(directory)
 	nr = 0
-	n_duplicates = 1
 	for enc in encodings:
 		for mr in mutation_rates:
 			for mmr in morphology_mutation_rates:
