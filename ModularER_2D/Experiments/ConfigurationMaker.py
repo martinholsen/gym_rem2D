@@ -7,6 +7,7 @@ morphology_mutation_rates = [0.01]
 mutation_sigmas = [0.1]
 encodings = ['direct','lsystem']
 n_duplicates = 1
+ea_type = ['deap', 'map-elites']
 
 def save_config(experiment_nr,mr,mmr,ms,enc,dir,eat='deap'):
 	config = configparser.ConfigParser()
@@ -73,6 +74,7 @@ if __name__ == "__main__":
 		for mr in mutation_rates:
 			for mmr in morphology_mutation_rates:
 				for ms in mutation_sigmas:
-					for i in range(n_duplicates):
-						save_config(nr, mr,mmr,ms, enc, directory +'/')
-						nr+=1
+					for eat in ea_type:
+						for i in range(n_duplicates):
+							save_config(nr, mr,mmr,ms, enc, directory +'/', eat)
+							nr+=1

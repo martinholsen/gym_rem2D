@@ -870,7 +870,8 @@ def plot_sweep():
 if __name__ == "__main__":
 	# the following lines of code are quick hacks that were used for last-minute plotting, they might be a bit lacking in user-friendliness
 	#plt.rcParams.update({'font.size': 16})
-	plot_sweep()
+	#plot_sweep()
+	path = "C:/results_sweep"
 	#plot_sweep_diversity()
 	#plot_comparison_fitness()
 	#diversity_plot()

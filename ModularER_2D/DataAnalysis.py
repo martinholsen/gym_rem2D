@@ -78,7 +78,7 @@ def plot_fitness(path, filename):
 
 if __name__ == "__main__":	
 	# add a path where you saved your files, make sure to end with '/'
-	path = "e.g. D:/your_file_folder/"
+	path = "C:/results/results_cfg_1/"
 	# add the filename of your data (the name of the pickled FitnessData object)
 	filename="s_"
 	# simple function to plot the progression of a single evolutionary run

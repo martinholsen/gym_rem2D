@@ -19,6 +19,8 @@ import os
 
 # EA
 from deap import base,tools,algorithms
+from map_elites import mymap
+
 
 # gym
 import gym
@@ -176,13 +178,13 @@ class run2D():
 				if (eat == 'deap'):
 					self.run_deap(config,population = population)
 				else:
-					print("run map-elites")
+					self.run_map_elites(config,population = population)
 			except:
 				raise("Could not find file to continue")
 		if (eat == 'deap'):
 			self.run_deap(config)
 		else:
-			print("run map-elites")
+			self.run_map_elites(config)
 
 
 	def initialize_parameters_from_config_file(self,dir, config):
@@ -204,6 +206,7 @@ class run2D():
 		self.MORPH_MUTATION_RATE = float(config['ea']['morphmutation_prob'])
 		self.MUT_SIGMA = float(config['ea']['mutation_sigma'])
 		self.TREE_DEPTH = int(config['morphology']['max_depth'])
+		self.TREE_LEAVES = int(config['morphology']['max_size'])-1
 
 		# 
 		print("Mutation rates - ", " control: " , self.MUTATION_RATE, ", morphology: ", 
@@ -235,6 +238,114 @@ class run2D():
 		self.PLOT_TREE = False
 		if (int(config['visualization']['v_tree']) == 1):
 			self.PLOT_TREE = True
+
+	def run_map_elites(self, config, population = None):
+
+		#Pseudo-code
+		"""
+		make X and P and map - X is phenotypes and P is performance
+		select random individuals from map
+		acquire performance and phenotype
+		compare and add to map
+		repeat
+		"""
+
+		toolbox = base.Toolbox()
+		toolbox.register("individual", Individual.random, self.moduleList, self.config)
+		toolbox.register("evaluate", evaluate,HEADLESS = self.headless, TREE_DEPTH = self.TREE_DEPTH)
+		toolbox.register("mutate", Individual.mutate, self.MORPH_MUTATION_RATE,self.MUTATION_RATE,self.MUT_SIGMA)
+
+		Map = mymap.Map(self.TREE_LEAVES)
+
+		N_GENERATIONS = 1+ int(int(config['ea']['n_evaluations'])/self.POPULATION_SIZE)
+		N_GENERATIONS -= len(self.fitnessData.avg)
+
+		# initialize map of elites
+		initial_map_iter = 100
+		for G in range(initial_map_iter):
+			Map.eval_individual(toolbox.individual(), TREE_DEPTH = self.TREE_DEPTH)
+		
+		gen = 0 # keep track of generations simulated
+		print("headless mode:", self.headless)
+		
+		if self.headless:
+			writer = sys.stdout
+			range_ = range(N_GENERATIONS)
+		else:
+			writer = range_ = tqdm.trange(N_GENERATIONS, file=sys.stdout)
+
+		for i in range_:
+			gen+=1
+			
+			offspring = [Map.random_select() for _ in range(self.POPULATION_SIZE)]
+
+
+			# deep copy of selected population
+			offspring = list(map(toolbox.clone, offspring))
+			for o in offspring:
+				toolbox.mutate(o)
+				# TODO only reset fitness to zero when mutation changes individual
+				# Implement DEAP built in functionality
+				o.fitness = 0
+			fitnesses = toolbox.map(toolbox.evaluate, offspring) # list(map(toolbox.evaluate, offspring))
+
+			fitness_values = []
+			for ind, fit in zip(offspring, fitnesses):
+				ind.fitness = fit
+				fitness_values.append(fit)
+
+			# Does this work? Is the fitness of the offspring changed?
+			for o in offspring: Map.eval_individual(o,self.TREE_DEPTH)
+
+
+			min = np.min(fitness_values)
+			max = np.max(fitness_values)
+			mean = np.mean(fitness_values)
+			dt = datetime.datetime.now()-self.time
+			self.time = datetime.datetime.now()
+			writer.write("Generation %d evaluated ( %s ) : Min %s, Max %s, Avg %s" % (i + 1, dt,min,max,mean))
+			if self.headless:
+				writer.write("\n")
+
+			
+			self.EVALUATION_NR+=len(offspring)
+
+			#print(float(self.EVALUATION_NR)/ float(self.TOTAL_EVALUATIONS) * float(100), "%")
+			self.fitnessData.addFitnessData(fitness_values,gen)
+			if self.SAVEDATA:
+				if (i % self.CHECKPOINT_FREQUENCY == 0 or i == N_GENERATIONS):
+					#self.fitnessData.save(self.SAVE_FILE_DIRECTORY)
+					self.fitnessData.save(self.SAVE_FILE_DIRECTORY)
+					pickle.dump(Map.get_elites(),open(self.SAVE_FILE_DIRECTORY + self.POPULATION_FILE + str(i), "wb"))
+
+			if self.PLOT_FITNESS:
+				self.plotter.plotFitnessProgress(self.fitnessData)
+				if (self.PLOT_TREE):
+					self.plotter.displayDivs(self.fitnessData)
+
+			# save only the best fit individual; currently, all other individuals of the population are discarded.
+			bestfit = 0.0
+			bestOffspring = Map.get_best_elite()
+
+			# To show the best individual
+			if (self.show_best == True):
+				# Hacky to only  display the best individuals when running in headless mode. 
+				# However, when not connecting for a time, the box2D window freezes. TODO
+				switch = False
+				if (self.headless == True):
+					self.headless = False
+					switch = True
+				# debug prints:
+				print("Fitness of best = ", toolbox.evaluate(bestOffspring,INTERVAL=5,HEADLESS=False))
+				#print("This fitness is stored as: ", bestOffspring.fitness)
+				#print(toolbox.evaluate(bestOffspring))
+				if switch == True:
+					self.headless = True
+
+			if (datetime.datetime.now() - self.start_time).seconds > int(config.get("ea", "wallclock_time_limit")):
+				print("Reached wall-clock time limit. Stopping evolutionary run")
+				break
+
 
 	def run_deap(self, config, population = None):
 		'''
@@ -383,7 +494,7 @@ def evaluate(individual, EVALUATION_STEPS= 10000, HEADLESS=True, INTERVAL=100, E
 
 def setup():
 	parser = argparse.ArgumentParser(description='Process arguments for configurations.')
-	parser.add_argument('--file',type = str, help='config file', default="1.cfg")
+	parser.add_argument('--file',type = str, help='config file', default="3.cfg")
 	parser.add_argument('--seed',type = int, help='seed', default=0)
 	parser.add_argument('--headless',type = int, help='headless mode', default=1)
 	parser.add_argument('--n_processes',type = int, help='number of processes to use', default=1)
