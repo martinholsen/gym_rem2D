@@ -456,6 +456,81 @@ class run2D():
 				print("Reached wall-clock time limit. Stopping evolutionary run")
 				break
 
+def record_result(config, dir, EVALUATION_STEPS= 10000, INTERVAL=100, ENV_LENGTH=100, group=False):
+
+	TREE_LEAVES = int(config['morphology']['max_size'])-1
+	TREE_DEPTH = int(config['morphology']['max_depth'])
+
+	env = getEnv()
+	env = gym.wrappers.Monitor(env, os.path.join(os.getcwd() + "/vid"), video_callable=lambda episode_id: True,force=True)
+
+	population = pickle.load(open(os.path.join(dir, 's_') + "pop" + "100", "rb"))
+
+	Map = mymap.Map(TREE_LEAVES)
+
+	for ind in population:
+		Map.eval_individual(ind, TREE_DEPTH = TREE_DEPTH)
+
+	if group == False:
+		best_ind = Map.get_best_elite()
+		
+		tree = best_ind.genome.create(TREE_DEPTH)
+
+		env.seed(4)
+		env.reset(tree=tree, module_list=best_ind.genome.moduleList)
+
+		it = 0
+		fitness = 0
+		for i in range(EVALUATION_STEPS):
+			it+=1
+			if it % INTERVAL == 0 or it == 1:
+				env.render()
+
+			action = np.ones_like(env.action_space.sample())
+			
+			observation, reward, done, info  = env.step(action)
+			
+			if reward< -10:
+				break
+			elif reward > ENV_LENGTH:
+				reward += (EVALUATION_STEPS-i)/EVALUATION_STEPS
+				fitness = reward
+				break
+			if reward > 0:
+				fitness = reward
+	else:
+		best_group = Map.get_5_best_elites()
+		for e in best_group:
+			tree = e.genome.create(TREE_DEPTH)
+
+			env.seed(4)
+			env.reset(tree=tree, module_list=e.genome.moduleList)
+
+			it = 0
+			fitness = 0
+			for i in range(EVALUATION_STEPS):
+				it+=1
+				if it % INTERVAL == 0 or it == 1:
+					env.render()
+
+				action = np.ones_like(env.action_space.sample())
+				
+				observation, reward, done, info  = env.step(action)
+				
+				if reward< -10:
+					break
+				elif reward > ENV_LENGTH:
+					reward += (EVALUATION_STEPS-i)/EVALUATION_STEPS
+					fitness = reward
+					break
+				if reward > 0:
+					fitness = reward
+
+
+
+
+		
+
 def evaluate(individual, EVALUATION_STEPS= 10000, HEADLESS=True, INTERVAL=100, ENV_LENGTH=100, TREE_DEPTH = None, CONTROLLER = None):
 	env = getEnv()
 	if TREE_DEPTH is None:
@@ -498,7 +573,7 @@ def setup():
 	parser.add_argument('--seed',type = int, help='seed', default=0)
 	parser.add_argument('--headless',type = int, help='headless mode', default=1)
 	parser.add_argument('--n_processes',type = int, help='number of processes to use', default=1)
-	parser.add_argument('--output',type = str, help='output directory', default='')
+	parser.add_argument('--output',type = str, help='output directory', default='results')
 	parser.add_argument('--wallclock-time-limit', type=int, help='wall-clock limit in seconds', default=sys.maxsize)
 	args = parser.parse_args()
 	random.seed(int(args.seed))
@@ -540,7 +615,11 @@ def setup():
 	config.set("ea", "wallclock_time_limit", str(args.wallclock_time_limit))
 	return config, newdir
 
+
+
 if __name__ == "__main__":
 	config, dir = setup()
-	experiment = run2D(config,dir)
-	experiment.run(config)
+	#experiment = run2D(config,dir)
+	#experiment.run(config)
+	record_result(config,dir,group=True)
+	
