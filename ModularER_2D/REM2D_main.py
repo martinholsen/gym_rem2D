@@ -260,10 +260,22 @@ class run2D():
 		N_GENERATIONS = 1+ int(int(config['ea']['n_evaluations'])/self.POPULATION_SIZE)
 		N_GENERATIONS -= len(self.fitnessData.avg)
 
+		# Create pool for multiprocessing
+		if config["ea"]["headless"] == "1":
+			n_cores = int(self.config["ea"]["n_cores"])
+			print("Starting deap in headless mode using " , n_cores , " cores")
+			print("Evolution will run for ", N_GENERATIONS, " generations, with a population size of ", self.POPULATION_SIZE)
+			pool = multiprocessing.Pool(n_cores)
+			cs = int(np.ceil(float(self.POPULATION_SIZE)/float(n_cores)))
+			toolbox.register("map", pool.map, chunksize=cs)
+
 		# initialize map of elites
 		initial_map_iter = 100
 		for G in range(initial_map_iter):
-			Map.eval_individual(toolbox.individual(), TREE_DEPTH = self.TREE_DEPTH)
+			Map.eval_individual(toolbox.individual(),self.TREE_DEPTH)
+			
+
+		Map.store_timeseries()
 		
 		gen = 0 # keep track of generations simulated
 		print("headless mode:", self.headless)
@@ -273,6 +285,7 @@ class run2D():
 			range_ = range(N_GENERATIONS)
 		else:
 			writer = range_ = tqdm.trange(N_GENERATIONS, file=sys.stdout)
+
 
 		for i in range_:
 			gen+=1
@@ -302,12 +315,15 @@ class run2D():
 			max = np.max(fitness_values)
 			mean = np.mean(fitness_values)
 			dt = datetime.datetime.now()-self.time
+			tt = datetime.datetime.now()-self.start_time
 			self.time = datetime.datetime.now()
 			writer.write("Generation %d evaluated ( %s ) : Min %s, Max %s, Avg %s" % (i + 1, dt,min,max,mean))
+			writer.write("\nTotal elapsed time ( %s )" % (tt))
+			writer.write("\nTotal map coverage: %s" % (Map.coverage))
 			if self.headless:
 				writer.write("\n")
 
-			
+			Map.store_timeseries()
 			self.EVALUATION_NR+=len(offspring)
 
 			#print(float(self.EVALUATION_NR)/ float(self.TOTAL_EVALUATIONS) * float(100), "%")
@@ -345,6 +361,7 @@ class run2D():
 			if (datetime.datetime.now() - self.start_time).seconds > int(config.get("ea", "wallclock_time_limit")):
 				print("Reached wall-clock time limit. Stopping evolutionary run")
 				break
+		Map.plot_heat()
 
 
 	def run_deap(self, config, population = None):
@@ -455,8 +472,31 @@ class run2D():
 			if (datetime.datetime.now() - self.start_time).seconds > int(config.get("ea", "wallclock_time_limit")):
 				print("Reached wall-clock time limit. Stopping evolutionary run")
 				break
+	
 
-def record_result(config, dir, EVALUATION_STEPS= 10000, INTERVAL=100, ENV_LENGTH=100, group=False):
+def display_stats(config,dir,pop=100):
+
+	TREE_LEAVES = int(config['morphology']['max_size'])-1
+	TREE_DEPTH = int(config['morphology']['max_depth'])
+
+	population = pickle.load(open(os.path.join(dir, 's_') + "pop" + str(pop), "rb"))
+
+	Map = mymap.Map(TREE_LEAVES)
+
+	for ind in population:
+		Map.eval_individual(ind, TREE_DEPTH = TREE_DEPTH)
+
+	print("\n=============== Stats : ===============\n")
+
+	sys.stdout.write("Total map coverage : %s" % (Map.coverage))
+	sys.stdout.write("\nPrecision for map : %s" % (Map.precision))
+	sys.stdout.write("\nReliability for map : %s" % (Map.reliability))
+	sys.stdout.write("\nQD-score : %s" % (Map.QD_score))
+
+	print("\n\n=======================================\n")
+
+
+def record_result(config, dir, EVALUATION_STEPS= 10000, INTERVAL=100, ENV_LENGTH=100, group=False, pop=100):
 
 	TREE_LEAVES = int(config['morphology']['max_size'])-1
 	TREE_DEPTH = int(config['morphology']['max_depth'])
@@ -464,7 +504,7 @@ def record_result(config, dir, EVALUATION_STEPS= 10000, INTERVAL=100, ENV_LENGTH
 	env = getEnv()
 	env = gym.wrappers.Monitor(env, os.path.join(os.getcwd() + "/vid"), video_callable=lambda episode_id: True,force=True)
 
-	population = pickle.load(open(os.path.join(dir, 's_') + "pop" + "100", "rb"))
+	population = pickle.load(open(os.path.join(dir, 's_') + "pop" + str(pop), "rb"))
 
 	Map = mymap.Map(TREE_LEAVES)
 
@@ -569,7 +609,7 @@ def evaluate(individual, EVALUATION_STEPS= 10000, HEADLESS=True, INTERVAL=100, E
 
 def setup():
 	parser = argparse.ArgumentParser(description='Process arguments for configurations.')
-	parser.add_argument('--file',type = str, help='config file', default="3.cfg")
+	parser.add_argument('--file',type = str, help='config file', default="1.cfg")
 	parser.add_argument('--seed',type = int, help='seed', default=0)
 	parser.add_argument('--headless',type = int, help='headless mode', default=1)
 	parser.add_argument('--n_processes',type = int, help='number of processes to use', default=1)
@@ -619,7 +659,8 @@ def setup():
 
 if __name__ == "__main__":
 	config, dir = setup()
-	#experiment = run2D(config,dir)
-	#experiment.run(config)
-	record_result(config,dir,group=True)
+	experiment = run2D(config,dir)
+	experiment.run(config)
+	display_stats(config,dir,pop=1000)
+	record_result(config,dir,group=True,pop=1000)
 	
