@@ -10,13 +10,14 @@ class Tree:
 		return self.nodes
 	def get_leaves(self):
 		leaves = 0
-		for node in self.nodes:
+		nodes = self.getNodes()
+		for node in nodes:
 			if node.parent != None or node.parent != -1:
 				if isinstance(node.parent,int):
 					self.nodes[node.parent].has_children = True
 					continue
 				node.parent.has_children = True
-		for node in self.nodes:
+		for node in nodes:
 			if node.has_children != True:
 				leaves += 1
 		return leaves

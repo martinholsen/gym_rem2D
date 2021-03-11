@@ -39,7 +39,7 @@ class DirectNode(Tree.Node):
 		self.children.append(DirectNode(index,parent,moduleRef,parentConnectionSite,moduleController,module))
 		self.availableConnections.remove(parentConnectionSite)
 		return index
-
+		
 class DirectEncoding(enc.Encoding):
 	def __init__(self,moduleList,config=None):
 		# This list contains the modules to choose from. Needs to be deep-copied when used
