@@ -646,17 +646,17 @@ def setup():
 		print("created the ", newdir)
 
 	config.set("ea", "wallclock_time_limit", str(args.wallclock_time_limit))
-	config.set("mutation_prob", str(args.mr))
-	config.set("morphmutation_rate", str(args.mmr))
-	config.set("mutation_sigma", str(args.sigma))
+	config.set("ea","mutation_prob", str(args.mr))
+	config.set("ea","morphmutation_rate", str(args.mmr))
+	config.set("ea","mutation_sigma", str(args.sigma))
 	return config, newdir
 
 
 
 if __name__ == "__main__":
 	config, dir = setup()
-	experiment = run2D(config,dir)
-	experiment.run(config)
+	#experiment = run2D(config,dir)
+	#experiment.run(config)
 	display_stats(config,dir,pop=1000)
 	record_result(config,dir,group=True,pop=1000)
 	
