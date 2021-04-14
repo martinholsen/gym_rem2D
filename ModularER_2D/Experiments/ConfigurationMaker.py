@@ -17,7 +17,7 @@ def save_config(experiment_nr,mr,mmr,ms,enc,dir,eat='deap'):
 	
 	config['ea'] = {}
 	# total number of evaluations: note that generations is calculated as 'n_evaluations' / 'batch_size'
-	config['ea']['n_evaluations'] = '10000'
+	config['ea']['n_evaluations'] = '100000'
 	# Number of individuals evaluated per generation 
 	config['ea']['batch_size'] = '100'
 	# probability for controller mutations

@@ -18,13 +18,11 @@ import datetime
 import os
 
 # EA
-from deap import base,tools,algorithms
+from deap import base,tools
 from map_elites import mymap
-
 
 # gym
 import gym
-import gym_rem2D
 
 # The two module types are imported to this file so that all can tweak some
 
@@ -32,14 +30,6 @@ import gym_rem2D
 from Encodings import LSystem as ls
 from Encodings import Network_Encoding as nn
 from Encodings import Direct_Encoding as de
-from Encodings import Cellular_Encoding as ce
-import Tree as tree_morph # An encoding creates a tree, a tree creates a robot
-
-# plotting
-import matplotlib.pyplot as plt
-import math
-import matplotlib.patches as mpatches
-import time
 
 # configuration handler
 import argparse
@@ -615,6 +605,9 @@ def setup():
 	parser.add_argument('--n_processes',type = int, help='number of processes to use', default=1)
 	parser.add_argument('--output',type = str, help='output directory', default='results')
 	parser.add_argument('--wallclock-time-limit', type=int, help='wall-clock limit in seconds', default=sys.maxsize)
+	parser.add_argument('--mr',type = float, help='Mutation rate', default=0.01)
+	parser.add_argument('--mmr',type = float, help = 'Morphological mutation rate', default=0.01)
+	parser.add_argument('--sigma',type = float, help = 'sigma', default=0.1)
 	args = parser.parse_args()
 	random.seed(int(args.seed))
 	np.random.seed(int(args.seed))
@@ -653,6 +646,9 @@ def setup():
 		print("created the ", newdir)
 
 	config.set("ea", "wallclock_time_limit", str(args.wallclock_time_limit))
+	config.set("mutation_prob", str(args.mr))
+	config.set("morphmutation_rate", str(args.mmr))
+	config.set("mutation_sigma", str(args.sigma))
 	return config, newdir
 
 
