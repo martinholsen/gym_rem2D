@@ -640,7 +640,7 @@ def setup():
 		for (each_key, each_val) in config.items(each_section):
 			print(each_key, each_val)
 
-	newdir = os.path.join(orig_cwd, args.output)
+	newdir = os.path.join(orig_cwd, args.output + "-" + datetime.date.today())
 	if not os.path.exists(newdir):
 		os.makedirs(newdir)
 		print("created the ", newdir)
@@ -655,8 +655,8 @@ def setup():
 
 if __name__ == "__main__":
 	config, dir = setup()
-	#experiment = run2D(config,dir)
-	#experiment.run(config)
+	experiment = run2D(config,dir)
+	experiment.run(config)
 	display_stats(config,dir,pop=1000)
 	record_result(config,dir,group=True,pop=1000)
 	
