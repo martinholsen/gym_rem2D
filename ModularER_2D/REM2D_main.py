@@ -468,6 +468,7 @@ def display_stats(config,dir,pop=100):
 
 	TREE_LEAVES = int(config['morphology']['max_size'])-1
 	TREE_DEPTH = int(config['morphology']['max_depth'])
+	pop = int(config['ea']['n_evaluations']/config['ea']['batch_size'])
 
 	population = pickle.load(open(os.path.join(dir, 's_') + "pop" + str(pop), "rb"))
 
@@ -490,6 +491,7 @@ def record_result(config, dir, EVALUATION_STEPS= 10000, INTERVAL=100, ENV_LENGTH
 
 	TREE_LEAVES = int(config['morphology']['max_size'])-1
 	TREE_DEPTH = int(config['morphology']['max_depth'])
+	pop = int(config['ea']['n_evaluations']/config['ea']['batch_size'])
 
 	env = getEnv()
 	env = gym.wrappers.Monitor(env, os.path.join(os.getcwd() + "/vid"), video_callable=lambda episode_id: True,force=True)
@@ -605,9 +607,12 @@ def setup():
 	parser.add_argument('--n_processes',type = int, help='number of processes to use', default=1)
 	parser.add_argument('--output',type = str, help='output directory', default='results')
 	parser.add_argument('--wallclock-time-limit', type=int, help='wall-clock limit in seconds', default=sys.maxsize)
-	parser.add_argument('--mr',type = float, help='Mutation rate', default=0.01)
-	parser.add_argument('--mmr',type = float, help = 'Morphological mutation rate', default=0.01)
-	parser.add_argument('--sigma',type = float, help = 'sigma', default=0.1)
+	parser.add_argument('--mr',type = float, help='Mutation rate', default=0.64)
+	parser.add_argument('--mmr',type = float, help = 'Morphological mutation rate', default=0.32)
+	parser.add_argument('--sigma',type = float, help = 'sigma', default=1.0)
+	parser.add_argument('--cores',type = int, help='number of cores to use', default=6)
+	parser.add_argument('--n_evaluations',type = int, help='number of total evalutions', default=100000)
+	parser.add_argument('--batch_size',type = int, help='batch/population size', default=100)
 	args = parser.parse_args()
 	random.seed(int(args.seed))
 	np.random.seed(int(args.seed))
@@ -640,7 +645,7 @@ def setup():
 		for (each_key, each_val) in config.items(each_section):
 			print(each_key, each_val)
 
-	newdir = os.path.join(orig_cwd, args.output + "-" + datetime.date.today())
+	newdir = os.path.join(orig_cwd, args.output)
 	if not os.path.exists(newdir):
 		os.makedirs(newdir)
 		print("created the ", newdir)
@@ -649,6 +654,9 @@ def setup():
 	config.set("ea","mutation_prob", str(args.mr))
 	config.set("ea","morphmutation_rate", str(args.mmr))
 	config.set("ea","mutation_sigma", str(args.sigma))
+	config.set("ea","n_cores", str(args.cores))
+	config.set("ea","n_evaluations", str(args.n_evaluations))
+	config.set("ea","batch_size", str(args.batch_size))
 	return config, newdir
 
 
