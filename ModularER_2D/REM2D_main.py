@@ -651,7 +651,7 @@ def setup():
 
 	config.set("ea", "wallclock_time_limit", str(args.wallclock_time_limit))
 	config.set("ea","mutation_prob", str(args.mr))
-	config.set("ea","morphmutation_rate", str(args.mmr))
+	config.set("ea","morphmutation_prob", str(args.mmr))
 	config.set("ea","mutation_sigma", str(args.sigma))
 	config.set("ea","n_cores", str(args.cores))
 	config.set("ea","n_evaluations", str(args.n_evaluations))
