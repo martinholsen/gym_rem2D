@@ -28,7 +28,6 @@ import gym
 
 # Encodings:
 from Encodings import LSystem as ls
-from Encodings import Network_Encoding as nn
 from Encodings import Direct_Encoding as de
 
 # configuration handler
@@ -657,6 +656,10 @@ def setup():
 	config.set("ea","n_cores", str(args.cores))
 	config.set("ea","n_evaluations", str(args.n_evaluations))
 	config.set("ea","batch_size", str(args.batch_size))
+
+	with open(os.path.join(args.output , 'config.cfg'), 'w') as configfile:
+		config.write(configfile)
+
 	return config, newdir
 
 

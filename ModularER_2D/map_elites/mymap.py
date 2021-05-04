@@ -152,8 +152,9 @@ class Map():
             fig, ax = plt.subplots(figsize=(12,7))
             title = "Heatmap for rastigrin"
             plt.title(title, fontsize=18)
-
             sns.heatmap(df, fmt="", linewidths=0, ax=ax)
+            ax.set_ylabel('b1')
+            ax.set_xlabel('b2')
             plt.show()
 
         else:
