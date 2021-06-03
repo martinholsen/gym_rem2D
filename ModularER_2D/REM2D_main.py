@@ -49,10 +49,11 @@ def getEnv():
 	if env is None:
 		#env = M2D.Modular2D()
 		# OpenAI code to register and call gym environment.
-		parser = argparse.ArgumentParser()
-		parser.add_argument('env_id', nargs='?', default='Modular2DLocomotion-v0', help='Select the environment to run')
-		args = parser.parse_args()
-		env = gym.make(args.env_id)
+		#parser = argparse.ArgumentParser()
+		#parser.add_argument('env_id', nargs='?', default='Modular2DLocomotion-v0', help='Select the environment to run')
+		#args = parser.parse_args()
+		env_id = 'Modular2DLocomotion-v0'
+		env = gym.make(env_id)
 	return env
 
 def get_module_list():
@@ -157,20 +158,19 @@ class run2D():
 		The continue progression file specifies whether it should load an evolutionary run that might
 		have crashed, or that you want to continue with perhaps different parameters. 
 		'''
-		eat = config['ea']['type']
 		if (continue_progression):
 			try:
 				self.fitnessData = pickle.load(open(self.SAVE_FILE_DIRECTORY,"rb"))
 				population = pickle.load(open(self.SAVE_FILE_DIRECTORY + self.POPULATION_FILE,"rb"))
 				self.plotter.plotFitnessProgress(self.fitnessData )
 				print("Found existing population, continueing evolution")
-				if (eat == 'deap'):
+				if (self.EA_TYPE == 'deap'):
 					self.run_deap(config,population = population)
 				else:
 					self.run_map_elites(config,population = population)
 			except:
 				raise("Could not find file to continue")
-		if (eat == 'deap'):
+		if (self.EA_TYPE == 'deap'):
 			self.run_deap(config)
 		else:
 			self.run_map_elites(config)
@@ -200,6 +200,9 @@ class run2D():
 		# 
 		print("Mutation rates - ", " control: " , self.MUTATION_RATE, ", morphology: ", 
 		self.MORPH_MUTATION_RATE, ", sigma: ", self.MUT_SIGMA)
+
+		# Algorithm selection
+		self.EA_TYPE = str(config['ea']['type'])
 
 		# Wall of death speed
 		self.WOD_SPEED = float(config['evaluation']['wod_speed'])		
@@ -649,7 +652,8 @@ def setup():
 		os.makedirs(newdir)
 		print("created the ", newdir)
 
-	config.set("ea", "wallclock_time_limit", str(args.wallclock_time_limit))
+	config.set("ea","wallclock_time_limit", str(args.wallclock_time_limit))
+	config.set("ea","headless", str(args.headless))
 	config.set("ea","mutation_prob", str(args.mr))
 	config.set("ea","morphmutation_prob", str(args.mmr))
 	config.set("ea","mutation_sigma", str(args.sigma))
@@ -657,7 +661,7 @@ def setup():
 	config.set("ea","n_evaluations", str(args.n_evaluations))
 	config.set("ea","batch_size", str(args.batch_size))
 
-	with open(os.path.join(args.output , 'config.cfg'), 'w') as configfile:
+	with open(os.path.join(newdir, 'config.cfg'), 'w') as configfile:
 		config.write(configfile)
 
 	return config, newdir
@@ -665,6 +669,7 @@ def setup():
 
 
 if __name__ == "__main__":
+	multiprocessing.freeze_support()
 	config, dir = setup()
 	experiment = run2D(config,dir)
 	experiment.run(config)
