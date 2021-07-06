@@ -122,6 +122,12 @@ class Map():
         
         return elites
 
+    def get_map(self):
+        """
+        Get a pointer to the map
+        """
+        return self._map
+
     def get_best_elite(self):
         best_elite = None
         elites = self.get_elites()

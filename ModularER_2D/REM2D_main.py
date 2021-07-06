@@ -368,6 +368,8 @@ class run2D():
 		toolbox.register("mutate", Individual.mutate, self.MORPH_MUTATION_RATE,self.MUTATION_RATE,self.MUT_SIGMA)
 		toolbox.register("select",tools.selTournament, tournsize = 4)
 
+		Map = mymap.Map(self.TREE_LEAVES)
+
 		N_GENERATIONS = 1+ int(int(config['ea']['n_evaluations'])/self.POPULATION_SIZE)
 		N_GENERATIONS -= len(self.fitnessData.avg)
 
@@ -413,6 +415,9 @@ class run2D():
 				ind.fitness = fit
 				fitness_values.append(fit)
 
+			
+			for o in offspring: Map.eval_individual(o,self.TREE_DEPTH)
+
 			population = offspring
 			min = np.min(fitness_values)
 			max = np.max(fitness_values)
@@ -424,13 +429,14 @@ class run2D():
 				writer.write("\n")
 			self.EVALUATION_NR+=len(population)
 
+
 			#print(float(self.EVALUATION_NR)/ float(self.TOTAL_EVALUATIONS) * float(100), "%")
 			self.fitnessData.addFitnessData(fitness_values,gen)
 			if self.SAVEDATA:
 				if (i % self.CHECKPOINT_FREQUENCY == 0 or i == N_GENERATIONS):
 					#self.fitnessData.save(self.SAVE_FILE_DIRECTORY)
 					self.fitnessData.save(self.SAVE_FILE_DIRECTORY)
-					pickle.dump(population,open(self.SAVE_FILE_DIRECTORY + self.POPULATION_FILE + str(i), "wb"))
+					pickle.dump(Map.get_elites(),open(self.SAVE_FILE_DIRECTORY + self.POPULATION_FILE + str(i), "wb"))
 
 			if self.PLOT_FITNESS:
 				self.plotter.plotFitnessProgress(self.fitnessData)
@@ -439,12 +445,12 @@ class run2D():
 
 			# save only the best fit individual; currently, all other individuals of the population are discarded.
 			bestfit = 0.0
-			bestOffspring = None
-			for o in offspring:
-				if o.fitness > bestfit:
-					bestfit = o.fitness
-					bestOffspring = o
-					pickle.dump(o,open(self.SAVE_FILE_DIRECTORY + self.BEST_INDIVIDUAL_FILE + str(i), "wb"))
+			#bestOffspring = None
+			#for o in offspring:
+				#if o.fitness > bestfit:
+					#bestfit = o.fitness
+					#bestOffspring = o
+					#pickle.dump(o,open(self.SAVE_FILE_DIRECTORY + self.BEST_INDIVIDUAL_FILE + str(i), "wb"))
 
 			# To show the best individual
 			if (self.show_best == True):
@@ -470,7 +476,7 @@ def display_stats(config,dir,pop=100):
 
 	TREE_LEAVES = int(config['morphology']['max_size'])-1
 	TREE_DEPTH = int(config['morphology']['max_depth'])
-	pop = int(config['ea']['n_evaluations']/config['ea']['batch_size'])
+	pop = int(int(config['ea']['n_evaluations'])/int(config['ea']['batch_size']))
 
 	population = pickle.load(open(os.path.join(dir, 's_') + "pop" + str(pop), "rb"))
 
@@ -493,7 +499,7 @@ def record_result(config, dir, EVALUATION_STEPS= 10000, INTERVAL=100, ENV_LENGTH
 
 	TREE_LEAVES = int(config['morphology']['max_size'])-1
 	TREE_DEPTH = int(config['morphology']['max_depth'])
-	pop = int(config['ea']['n_evaluations']/config['ea']['batch_size'])
+	pop = int(int(config['ea']['n_evaluations'])/int(config['ea']['batch_size']))
 
 	env = getEnv()
 	env = gym.wrappers.Monitor(env, os.path.join(os.getcwd() + "/vid"), video_callable=lambda episode_id: True,force=True)
@@ -603,7 +609,7 @@ def evaluate(individual, EVALUATION_STEPS= 10000, HEADLESS=True, INTERVAL=100, E
 
 def setup():
 	parser = argparse.ArgumentParser(description='Process arguments for configurations.')
-	parser.add_argument('--file',type = str, help='config file', default="1.cfg")
+	parser.add_argument('--file',type = str, help='config file', default="0.cfg")
 	parser.add_argument('--seed',type = int, help='seed', default=0)
 	parser.add_argument('--headless',type = int, help='headless mode', default=1)
 	parser.add_argument('--n_processes',type = int, help='number of processes to use', default=1)
@@ -669,10 +675,9 @@ def setup():
 
 
 if __name__ == "__main__":
-	multiprocessing.freeze_support()
 	config, dir = setup()
-	experiment = run2D(config,dir)
-	experiment.run(config)
+	#experiment = run2D(config,dir)
+	#experiment.run(config)
 	display_stats(config,dir,pop=1000)
 	record_result(config,dir,group=True,pop=1000)
 	
